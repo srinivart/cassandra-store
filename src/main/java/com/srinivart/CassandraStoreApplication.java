@@ -21,7 +21,7 @@ public class CassandraStoreApplication {
 
 		helper.readFromTable();
 
-        helper.updateTable();
+                helper.updateTable();
 
 		helper.deleteFromTable();
 
