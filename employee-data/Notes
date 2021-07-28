@@ -1,0 +1,410 @@
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of constructor in com.srinivart.controller.EmployeeRestController required a bean of type 'com.srinivart.service.EmployeeServiceImpl' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.srinivart.service.EmployeeServiceImpl' in your configuration.
+
+
+
+Solution   --> removed @Autowired
+-----
+public EmployeeRestController() {
+    }
+
+
+
+
+  //@Autowired
+      private EmployeeServiceImpl employeeService;b
+
+
+
+
+
+
+
+
+ 2)
+
+
+  java.lang.NullPointerException: null
+  	at com.srinivart.controller.EmployeeRestController.addEmployee(EmployeeRestController.java:53) ~[classes/:na]
+  	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
+  	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[na:na]
+  	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
+  	at java.base/java.lang.reflect.Method.invoke(Method.java:566) ~[na:na]
+
+
+  	solution
+  	----->
+  	public class EmployeeRestController {
+
+        //@Autowired
+        private EmployeeServiceImpl employeeService;
+
+        public EmployeeRestController() {
+            this.employeeService = new EmployeeServiceImpl();  // creating object for implementation class
+        }
+
+
+   --->
+
+
+
+
+   3)
+   ----
+
+   com.datastax.driver.core.exceptions.SyntaxError: line 1:74 mismatched input '1' expecting EOF (... ?, ?, ?);[1]...)
+
+
+
+String query1 = "INSERT INTO employee (empid, name, designation, salary)"
+                + " VALUES(1,'teju', 'Developer', 65000);" ;
+
+
+               INSERT_INTO_TABLE1 + empid+","+name+","+designation+","+salary;
+               "INSERT INTO employee (empid, name, designation, salary)" +
+                 "VALUES(?, ?, ?, ?);";
+
+
+
+
+
+
+
+
+Testing
+---->
+
+http://localhost:8085/employees/post
+
+
+Post
+-----
+{
+"empid" : 1,
+"name" : "srini",
+"designation" : "developer",
+"salary" : 65000
+}
+
+
+output
+-----
+{
+    "empid": 1,
+    "name": "srini",
+    "designation": "developer",
+    "salary": 65000
+}
+
+
+
+
+DB
+---
+select * from employee;
+
+ empid | designation | name  | salary
+-------+-------------+-------+--------
+     1 |   developer | srini |  65000
+
+(1 rows)
+
+
+
+
+
+
+
+
+
+
+--->
+
+{
+    "empid": 1,
+    "name": "srini",
+    "designation": "developer",
+    "salary": 65000
+}
+
+
+
+cqlsh:srinivart> select * from employee;
+
+ empid | designation | name | salary
+-------+-------------+------+--------
+     1 |   Developer | teju |  65000
+
+(1 rows)
+
+
+
+
+
+
+
+
+GET
+---
+
+http://localhost:8085/employees/get
+
+[Row[1, developer, srini, 65000]]
+
+
+
+cqlsh:srinivart> select * from employee;
+
+ empid | designation | name  | salary
+-------+-------------+-------+--------
+     1 |   developer | srini |  65000
+     2 |          qa |  teju |  45000
+
+ [Row[1, developer, srini, 65000], Row[2, qa, teju, 45000]]
+
+
+
+
+
+R&D
+--
+for(Row row: resultSet){
+            System.out.println(row.getColumnDefinitions());
+        }
+
+ ---
+ Columns[empid(int), designation(varchar), name(varchar), salary(int)]
+
+
+
+for(Row row: resultSet){
+            System.out.println(row.getString(1));
+        }
+
+  ----
+   developer
+
+
+
+
+
+
+
+
+ResultSEt  ---> Converting to object
+
+
+Map<String, String> columns = queryColumns(resultSet);
+        List<JSONObject> result = new ArrayList<>();
+        for (Row row : resultSet) {
+            JSONObject json = new JSONObject();
+            columns.forEach((k, v) -> {
+                if (columns.get(k).contains("timestamp")) {
+                    if (row.getObject(k) != null) {
+                        try {
+                            json.put(k, ((Date) row.getObject(k)).getTime());
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else {
+                    try {
+                        json.put(k, row.getObject(k));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            result.add(json);
+            System.out.println("employe Json data: -> " + json);
+        }
+
+
+    }
+
+    public static Map<String, String> queryColumns(ResultSet rs) {
+        try {
+            ColumnDefinitions rscd = rs.getColumnDefinitions();
+            int count = rscd.size();
+            HashMap<String, String> reflect = Maps.newHashMap();
+            for (int i = 0; i < count; i++) {
+                String column = rscd.getName(i);
+                String type = rscd.getType(i).getName().name().toLowerCase();
+                reflect.put(column, type);
+            }
+            return reflect;
+        } catch (Exception e) {
+        }
+        return Maps.newHashMap();
+    }
+-----------
+
+
+
+{"empid":1,"name":"srini","designation":"developer","salary":65000}
+
+
+
+======================
+Json data -> To object
+======================
+
+
+
+employe Json data: -> {"empid":2,"name":"teju","designation":"qa","salary":45000}
+name ->: teju
+
+
+{
+    "empid": 2,
+    "name": "teju",
+    "designation": "qa",
+    "salary": 45000
+}
+
+
+
+
+
+
+Error in Updating TAble   --> it ovverides existing data if , whole data not provided
+------
+
+cqlsh:srinivart> select * from employee;
+
+ empid | designation | name  | salary
+-------+-------------+-------+--------
+     1 |   developer | srini |  65000
+     2 |          qa |  teju |  45000
+
+
+http://localhost:8085/employees/update/2
+body
+-----
+{
+    "designation": "senior developer",
+    "salary": 85000
+}
+
+
+
+output   --> this is wrong
+------
+
+{
+    "empid": 0,
+    "name": null,
+    "designation": "senior developer",
+    "salary": 85000
+}
+
+
+
+
+Update  --> Before / After
+------
+http://localhost:8085/employees/update/1
+{
+    "designation": "developer",
+    "salary": 95000
+}
+
+
+
+output
+----
+{
+    "empid": 0,
+    "name": null,
+    "designation": "developer",
+    "salary": 95000
+}
+
+
+
+cqlsh:srinivart> select * from employee;
+
+ empid | designation      | name  | salary
+-------+------------------+-------+--------
+     1 | senior developer | srini |  85000
+     2 |               qa |  teju |  45000
+
+(2 rows)
+cqlsh:srinivart> select * from employee;
+
+ empid | designation | name  | salary
+-------+-------------+-------+--------
+     1 |   developer | srini |  95000
+     2 |          qa |  teju |  45000
+
+(2 rows)
+
+
+Before/ After
+-------
+http://localhost:8085/employees/update/2
+
+{
+    "designation": "QA analyst",
+    "salary": 65000
+}
+
+
+
+(2 rows)
+cqlsh:srinivart> select * from employee;
+
+ empid | designation    | name  | salary
+-------+----------------+-------+--------
+     1 | senior analyst | srini |  75000
+     2 |             qa |  teju |  45000
+
+(2 rows)
+cqlsh:srinivart> select * from employee;
+
+ empid | designation    | name  | salary
+-------+----------------+-------+--------
+     1 | senior analyst | srini |  75000
+     2 |     QA analyst |  teju |  65000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Resources
+-----
+
+https://cassandra.apache.org/doc/latest/
+
+https://www.tutorialspoint.com/cassandra/index.htm
+
+
+https://docs.datastax.com/en/developer/java-driver/3.0/manual/statements/prepared/
+
+
+
+https://www.tabnine.com/code/java/methods/com.datastax.driver.core.ResultSet/one
+
+
+
+https://www.programmersought.com/article/71987171775/
