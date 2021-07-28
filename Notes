@@ -1,0 +1,43 @@
+https://www.tutorialspoint.com/cassandra/cassandra_create_table.htm
+
+
+
+Cassandra Notes
+
+
+DROP TABLE employee;
+
+
+
+desc employee;
+
+CREATE TABLE srinivart.employee (
+    empid int PRIMARY KEY,
+    designation text,
+    name text,
+    salary int
+
+
+
+select * from employee;
+
+ empid | designation | name | salary
+-------+-------------+------+--------
+
+(0 rows)
+
+
+
+ empid | designation | name  | salary
+-------+-------------+-------+--------
+     1 |   Developer | srini |  65000
+
+(1 rows)
+
+
+
+
+
+
+
+
